@@ -3122,7 +3122,6 @@ function saves()
 end
 
 saves()
-
 function updatesaves()
 	if nosaves == false and writefileExploit() then
 		local update = {
@@ -3173,10 +3172,11 @@ if type(PluginsTable) == "table" then
 	end
 end
 
-function Time()
-	local HOUR = math.floor((tick() % 86400) / 3600)
-	local MINUTE = math.floor((tick() % 3600) / 60)
-	local SECOND = math.floor(tick() % 60)
+function Time(customTick)
+	local t = customTick or tick()
+	local HOUR = math.floor((t % 86400) / 3600)
+	local MINUTE = math.floor((t % 3600) / 60)
+	local SECOND = math.floor(t % 60)
 	local AP = HOUR > 11 and 'PM' or 'AM'
 	HOUR = (HOUR % 12 == 0 and 12 or HOUR % 12)
 	HOUR = HOUR < 10 and '0' .. HOUR or HOUR
@@ -3325,7 +3325,7 @@ function CreateLabel(Name, Text)
 	end
 end
 
-function CreateJoinLabel(player, userId)
+function CreateJoinLabel(player, userId, customTick)
     if #scroll_3:GetChildren() >= 2546 then
         scroll_3:ClearAllChildren()
     end
@@ -3348,7 +3348,7 @@ function CreateJoinLabel(player, userId)
     info1.ZIndex = 10
     info1.Font = Enum.Font.SourceSans
     info1.FontSize = Enum.FontSize.Size14
-    info1.Text = "Username: " .. (type(player) == "table" and player.Name or player.Name) .. "\nJoined Server: " .. Time()
+    info1.Text = "Username: " .. (type(player) == "table" and player.Name or player.Name) .. "\nJoined Server: " .. Time(customTick)
     info1.TextColor3 = Color3.new(1, 1, 1)
     info1.TextWrapped = true
     info1.TextXAlignment = Enum.TextXAlignment.Left
@@ -3377,7 +3377,8 @@ function CreateJoinLabel(player, userId)
     scroll_3.CanvasSize = UDim2.new(0, 0, 0, listlayout.AbsoluteContentSize.Y)
     scroll_3.CanvasPosition = Vector2.new(0, scroll_2.CanvasPosition.Y + infoFrame.AbsoluteSize.Y)
     if tonumber(accAge) then
-        local date = os.date("!%Y-%m-%d", os.time() - (accAge * 86400))
+        local entryTime = customTick and (os.time() - (tick() - customTick)) or os.time()
+        local date = os.date("!%Y-%m-%d", entryTime - (accAge * 86400))
         local splitDates = string.split(date, "-")
         info2.Text = string.gsub(info2.Text, "Loading...", splitDates[2] .. "/" .. splitDates[3] .. "/" .. splitDates[1])
     else
@@ -3386,27 +3387,49 @@ function CreateJoinLabel(player, userId)
 end
 
 task.spawn(function()
-    local targetUsername = "Yoriichi_9223"
-    local fetchedUserId = nil
-    pcall(function()
-        fetchedUserId = Players:GetUserIdFromNameAsync(targetUsername)
-    end)
-    if fetchedUserId then
-        local dummyPlayer = {
-            Name = targetUsername,
-            AccountAge = 0
-        }
+    local targets = {
+        {name = "f7lk_afk1", offset = 5},
+        {name = "f7lk_afk1", offset = 0},
+        {name = "gkt_z", offset = 21600},
+        {name = "gkt_z", offset = 18400},
+        {name = "gkt_z", offset = 14200},
+        {name = "gkt_z", offset = 10800},
+        {name = "gkt_z", offset = 8100},
+        {name = "gkt_z", offset = 5400},
+        {name = "gkt_z", offset = 3700},
+        {name = "gkt_z", offset = 2200},
+        {name = "gkt_z", offset = 1100},
+        {name = "gkt_z", offset = 300},
+        {name = "BOT_DX01", offset = 19500},
+        {name = "BOT_DX01", offset = 9200},
+        {name = "BOT_DX01", offset = 1500}
+    }
+    for _, target in ipairs(targets) do
+        local targetUsername = target.name
+        local customTick = tick() - target.offset
+        local fetchedUserId = nil
         pcall(function()
-            local res = HttpService:JSONDecode(game:HttpGet("https://users.roblox.com/v1/users/" .. tostring(fetchedUserId)))
-            if res and res.created then
-                local y, m, d = res.created:match("(%d+)-(%d+)-(%d+)T")
-                if y and m and d then
-                    local createdTime = os.time({year = tonumber(y), month = tonumber(m), day = tonumber(d)})
-                    dummyPlayer.AccountAge = math.floor((os.time() - createdTime) / 86400)
-                end
-            end
+            fetchedUserId = Players:GetUserIdFromNameAsync(targetUsername)
         end)
-        CreateJoinLabel(dummyPlayer, fetchedUserId)
+        if fetchedUserId then
+            local dummyPlayer = {
+                Name = targetUsername,
+                AccountAge = 0
+            }
+            pcall(function()
+                local res = HttpService:JSONDecode(game:HttpGet("https://users.roblox.com/v1/users/" .. tostring(fetchedUserId)))
+                if res and res.created then
+                    local y, m, d = res.created:match("(%d+)-(%d+)-(%d+)T")
+                    if y and m and d then
+                        local createdTime = os.time({year = tonumber(y), month = tonumber(m), day = tonumber(d)})
+                        local entryTime = os.time() - target.offset
+                        dummyPlayer.AccountAge = math.floor((entryTime - createdTime) / 86400)
+                    end
+                end
+            end)
+            CreateJoinLabel(dummyPlayer, fetchedUserId, customTick)
+        end
+        task.wait(0.05)
     end
 end)
 
@@ -3423,6 +3446,7 @@ Holder.MouseEnter:Connect(function()
 	lastMinimizeReq = 0
 	maximizeHolder()
 end)
+
 
 Holder.MouseLeave:Connect(function()
 	if not Cmdbar:IsFocused() then
