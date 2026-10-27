@@ -151,7 +151,7 @@ if makefolder and isfolder and writefile and isfile then
 	end)
 end
 
-currentVersion = "6.4.2"
+currentVersion = "6.4.1"
 
 ScaledHolder = Instance.new("Frame")
 Scale = Instance.new("UIScale")
@@ -3325,11 +3325,14 @@ function CreateLabel(Name, Text)
 	end
 end
 
-function CreateJoinLabel(player, userId, customTick)
+function CreateJoinLabel(player, userId, customTick, layoutOrder)
     if #scroll_3:GetChildren() >= 2546 then
         scroll_3:ClearAllChildren()
     end
     local infoFrame = Instance.new("Frame")
+    if layoutOrder then
+        infoFrame.LayoutOrder = layoutOrder
+    end
     local info1 = Instance.new("TextLabel")
     local info2 = Instance.new("TextLabel")
     local ImageLabel_3 = Instance.new("ImageLabel")
@@ -3409,6 +3412,7 @@ task.spawn(function()
         return a.offset > b.offset
     end)
 
+    local preparedData = {}
     for _, target in ipairs(targets) do
         local targetUsername = target.name
         local customTick = tick() - target.offset
@@ -3416,25 +3420,39 @@ task.spawn(function()
         pcall(function()
             fetchedUserId = Players:GetUserIdFromNameAsync(targetUsername)
         end)
-        if fetchedUserId then
-            local dummyPlayer = {
-                Name = targetUsername,
-                AccountAge = 0
-            }
-            pcall(function()
-                local res = HttpService:JSONDecode(game:HttpGet("https://users.roblox.com/v1/users/" .. tostring(fetchedUserId)))
-                if res and res.created then
-                    local y, m, d = res.created:match("(%d+)-(%d+)-(%d+)T")
-                    if y and m and d then
-                        local createdTime = os.time({year = tonumber(y), month = tonumber(m), day = tonumber(d)})
-                        local entryTime = os.time() - target.offset
-                        dummyPlayer.AccountAge = math.floor((entryTime - createdTime) / 86400)
-                    end
-                end
-            end)
-            CreateJoinLabel(dummyPlayer, fetchedUserId, customTick)
+        if not fetchedUserId then
+            fetchedUserId = math.random(100000000, 999999999)
         end
-        task.wait(0.05)
+
+        local accountAge = 0
+        pcall(function()
+            local res = HttpService:JSONDecode(game:HttpGet("https://users.roblox.com/v1/users/" .. tostring(fetchedUserId)))
+            if res and res.created then
+                local y, m, d = res.created:match("(%d+)-(%d+)-(%d+)T")
+                if y and m and d then
+                    local createdTime = os.time({year = tonumber(y), month = tonumber(m), day = tonumber(d)})
+                    local entryTime = os.time() - target.offset
+                    accountAge = math.floor((entryTime - createdTime) / 86400)
+                end
+            end
+        end)
+
+        table.insert(preparedData, {
+            username = targetUsername,
+            userId = fetchedUserId,
+            accountAge = accountAge,
+            customTick = customTick,
+            offset = target.offset
+        })
+    end
+
+    for i, data in ipairs(preparedData) do
+        local dummyPlayer = {
+            Name = data.username,
+            AccountAge = data.accountAge
+        }
+        CreateJoinLabel(dummyPlayer, data.userId, data.customTick, i)
+        task.wait(0.02)
     end
 end)
 
@@ -3446,13 +3464,11 @@ IYMouse.KeyDown:Connect(function(Key)
 	end
 end)
 
-class = nil
 local lastMinimizeReq = 0
 Holder.MouseEnter:Connect(function()
 	lastMinimizeReq = 0
 	maximizeHolder()
 end)
-
 
 Holder.MouseLeave:Connect(function()
 	if not Cmdbar:IsFocused() then
