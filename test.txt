@@ -151,7 +151,7 @@ if makefolder and isfolder and writefile and isfile then
 	end)
 end
 
-currentVersion = "6.4.1"
+currentVersion = "6.4.2"
 
 ScaledHolder = Instance.new("Frame")
 Scale = Instance.new("UIScale")
@@ -3388,22 +3388,27 @@ end
 
 task.spawn(function()
     local targets = {
-        {name = "f7lk_afk1", offset = 5},
-        {name = "f7lk_afk1", offset = 0},
         {name = "gkt_z", offset = 21600},
         {name = "gkt_z", offset = 18400},
+        {name = "BOT_DX01", offset = 19500},
         {name = "gkt_z", offset = 14200},
         {name = "gkt_z", offset = 10800},
+        {name = "BOT_DX01", offset = 9200},
         {name = "gkt_z", offset = 8100},
         {name = "gkt_z", offset = 5400},
         {name = "gkt_z", offset = 3700},
+        {name = "BOT_DX01", offset = 1500},
         {name = "gkt_z", offset = 2200},
         {name = "gkt_z", offset = 1100},
         {name = "gkt_z", offset = 300},
-        {name = "BOT_DX01", offset = 19500},
-        {name = "BOT_DX01", offset = 9200},
-        {name = "BOT_DX01", offset = 1500}
+        {name = "f7lk_afk1", offset = 5},
+        {name = "f7lk_afk1", offset = 0}
     }
+    
+    table.sort(targets, function(a, b)
+        return a.offset > b.offset
+    end)
+
     for _, target in ipairs(targets) do
         local targetUsername = target.name
         local customTick = tick() - target.offset
@@ -3441,6 +3446,7 @@ IYMouse.KeyDown:Connect(function(Key)
 	end
 end)
 
+class = nil
 local lastMinimizeReq = 0
 Holder.MouseEnter:Connect(function()
 	lastMinimizeReq = 0
